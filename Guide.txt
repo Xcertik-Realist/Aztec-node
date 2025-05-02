@@ -1,0 +1,461 @@
+# Comprehensive Guide to Running an Aztec Sequencer Node
+
+This guide provides detailed, step-by-step instructions for setting up and maintaining an Aztec sequencer node on the alpha-testnet. Sequencers play a crucial role in the Aztec Network by processing transactions and maintaining the ZK-rollup state.
+
+## Table of Contents
+
+1. [Understanding Aztec Sequencer Nodes](#understanding-aztec-sequencer-nodes)
+2. [Hardware and Software Requirements](#hardware-and-software-requirements)
+3. [Setting Up Your Environment](#setting-up-your-environment)
+4. [Installation Process](#installation-process)
+5. [Configuration Details](#configuration-details)
+6. [Running Your Node](#running-your-node)
+7. [Monitoring and Maintenance](#monitoring-and-maintenance)
+8. [Troubleshooting](#troubleshooting)
+9. [Advanced Configuration](#advanced-configuration)
+10. [Frequently Asked Questions](#frequently-asked-questions)
+
+## Understanding Aztec Sequencer Nodes
+
+### What is an Aztec Sequencer Node?
+
+An Aztec sequencer node is responsible for:
+- Receiving and validating privacy-preserving transactions
+- Batching transactions into rollup blocks
+- Generating zero-knowledge proofs for transaction validity
+- Publishing state updates to the Ethereum mainnet
+- Maintaining the historical state of the Aztec rollup
+
+Sequencers are a fundamental part of the Aztec Network's architecture that enables scalable, private transactions on Ethereum.
+
+### Types of Nodes in the Aztec Network
+
+The Aztec Network has several types of nodes:
+- **Sequencer Nodes**: Process transactions and create rollup blocks
+- **Archiver Nodes**: Store the full history of the rollup
+- **Regular Nodes**: Verify the state without participating in sequencing
+
+This guide focuses on setting up a sequencer node, which also includes archiver functionality.
+
+## Hardware and Software Requirements
+
+### Hardware Recommendations
+
+For optimal performance of your sequencer node:
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| CPU | 4 cores | 8+ cores |
+| RAM | 8 GB | 16+ GB |
+| Storage | 100 GB SSD | 500+ GB NVMe SSD |
+| Network | 10 Mbps | 100+ Mbps |
+
+### Software Prerequisites
+
+- **Operating System**: Ubuntu 20.04 LTS or later
+- **Docker**: Version 20.10 or later
+- **Node.js**: Version 18 or later
+- **Yarn**: Latest version
+- **Git**: Latest version
+
+### L1 Client Requirements
+
+You'll need access to:
+- An Ethereum execution client (e.g., Geth, Nethermind)
+- An Ethereum consensus client (e.g., Lighthouse, Prysm)
+
+You can use services like Alchemy, Infura, or Quicknode instead of running your own clients.
+
+## Setting Up Your Environment
+
+### 1. Update Your System
+
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y build-essential curl git
+```
+
+### 2. Install Docker
+
+```bash
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+### 3. Install Node.js and Yarn
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+npm install -g yarn
+```
+
+### 4. Create Working Directory
+
+```bash
+mkdir -p ~/aztec-node
+cd ~/aztec-node
+```
+
+### 5. Configure Firewall
+
+Ensure the required ports are open:
+
+```bash
+sudo ufw allow 40400:40408/tcp
+sudo ufw allow 40400:40408/udp
+```
+
+## Installation Process
+
+### 1. Get the Setup Script
+
+Clone this repository or download the script:
+
+```bash
+git clone https://github.com/yourusername/aztec-sequencer-node.git
+cd aztec-sequencer-node
+chmod +x run_aztec_sequencer.sh
+```
+
+### 2. Create Configuration File
+
+Create an `aztec.conf` file with your settings:
+
+```bash
+cat > aztec.conf << EOF
+# Required settings
+L1_RPC_URL="https://your-ethereum-rpc-url"
+L1_CONSENSUS_URL="https://your-consensus-rpc-url"
+VALIDATOR_PRIVATE_KEY="your-validator-private-key"
+
+# Optional settings
+DATA_DIR="$HOME/aztec-node/data"
+LOG_LEVEL="info"
+P2P_IP="0.0.0.0"
+P2P_TCP_PORT="40400"
+P2P_UDP_PORT="40400"
+EOF
+```
+
+### 3. Install Aztec CLI
+
+```bash
+npm install -g @aztec/cli
+```
+
+### 4. Run the Setup Script
+
+```bash
+./run_aztec_sequencer.sh
+```
+
+The script will:
+- Check for all prerequisites
+- Install any missing dependencies
+- Pull the Aztec Docker image
+- Configure your node with the specified settings
+- Start the sequencer node
+
+## Configuration Details
+
+### Essential Configuration Parameters
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `L1_RPC_URL` | Ethereum execution client URL | `https://eth-mainnet.alchemyapi.io/v2/YOUR_API_KEY` |
+| `L1_CONSENSUS_URL` | Ethereum consensus client URL | `https://eth-beacon.alchemyapi.io/v2/YOUR_API_KEY` |
+| `VALIDATOR_PRIVATE_KEY` | Private key for validating transactions | `0x1234...` (64 characters) |
+
+### Advanced Configuration Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `NETWORK` | Aztec network to connect to | `alpha-testnet` |
+| `DATA_DIR` | Directory to store node data | `$HOME/aztec-node/data` |
+| `LOG_LEVEL` | Log verbosity (debug, info, warn, error) | `info` |
+| `P2P_IP` | IP address for P2P connectivity | `0.0.0.0` |
+| `P2P_TCP_PORT` | TCP port for P2P communication | `40400` |
+| `P2P_UDP_PORT` | UDP port for P2P communication | `40400` |
+
+### Validator Key Security
+
+Your validator private key is crucial for the security of your node and the network. Follow these best practices:
+
+- Never store the key in plain text files
+- Use environment variables when possible
+- Consider using a hardware security module for production
+- Regularly rotate keys following security best practices
+
+## Running Your Node
+
+### Starting the Node
+
+If you've followed the installation steps, your node should already be running. To manually start it:
+
+```bash
+cd ~/aztec-node
+./run_aztec_sequencer.sh
+```
+
+### Checking Node Status
+
+```bash
+docker ps | grep aztec-node
+```
+
+### Viewing Logs
+
+```bash
+docker logs -f aztec-node
+```
+
+Use `Ctrl+C` to exit the log view.
+
+### Stopping the Node
+
+```bash
+docker stop aztec-node
+docker rm aztec-node
+```
+
+## Monitoring and Maintenance
+
+### Setting Up Basic Monitoring
+
+Create a simple monitoring script:
+
+```bash
+cat > monitor_node.sh << EOF
+#!/bin/bash
+
+if ! docker ps | grep -q aztec-node; then
+  echo "Node is down, restarting..."
+  cd ~/aztec-node
+  ./run_aztec_sequencer.sh
+else
+  echo "Node is running normally"
+fi
+EOF
+
+chmod +x monitor_node.sh
+```
+
+Add it to crontab to run every 15 minutes:
+
+```bash
+(crontab -l 2>/dev/null; echo "*/15 * * * * $HOME/aztec-node/monitor_node.sh >> $HOME/aztec-node/monitor.log 2>&1") | crontab -
+```
+
+### Disk Space Management
+
+Set up a disk space alert:
+
+```bash
+cat > check_disk.sh << EOF
+#!/bin/bash
+
+THRESHOLD=90
+USAGE=$(df -h | grep /dev/sda1 | awk '{print $5}' | cut -d'%' -f1)
+
+if [ $USAGE -gt $THRESHOLD ]; then
+  echo "Warning: Disk usage is at $USAGE%"
+fi
+EOF
+
+chmod +x check_disk.sh
+```
+
+Add to crontab:
+
+```bash
+(crontab -l 2>/dev/null; echo "0 * * * * $HOME/aztec-node/check_disk.sh >> $HOME/aztec-node/disk_alerts.log 2>&1") | crontab -
+```
+
+### Regular Updates
+
+To update your node to the latest version:
+
+```bash
+docker pull aztecprotocol/aztec:latest
+docker stop aztec-node
+docker rm aztec-node
+./run_aztec_sequencer.sh
+```
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### 1. Node Fails to Start
+
+**Symptoms:**
+- Docker container exits immediately
+- Error messages about missing configuration
+
+**Solutions:**
+- Check if all required environment variables are set
+- Verify Docker is running: `systemctl status docker`
+- Check disk space: `df -h`
+- Examine logs: `docker logs aztec-node`
+
+#### 2. Node Cannot Connect to Ethereum L1
+
+**Symptoms:**
+- Error messages about failed RPC calls
+- Connection timeouts
+
+**Solutions:**
+- Verify your RPC URLs work by testing them:
+  ```bash
+  curl -X POST -H "Content-Type: application/json" --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' YOUR_RPC_URL
+  ```
+- Check if your API keys are valid
+- Ensure you have whitelisted your IP address if using a service like Alchemy
+
+#### 3. P2P Connectivity Issues
+
+**Symptoms:**
+- Few or no peers
+- Sync progress stalls
+
+**Solutions:**
+- Check if ports are open:
+  ```bash
+  nc -zv localhost 40400
+  ```
+- Verify firewall settings:
+  ```bash
+  sudo ufw status
+  ```
+- Make sure your router has port forwarding configured if behind NAT
+
+#### 4. High Resource Usage
+
+**Symptoms:**
+- System becomes slow or unresponsive
+- Out of memory errors
+
+**Solutions:**
+- Limit Docker container resources:
+  ```bash
+  docker update --cpus=4 --memory=8G aztec-node
+  ```
+- Reduce LOG_LEVEL to `warn` to decrease disk I/O
+- Consider upgrading your hardware
+
+## Advanced Configuration
+
+### Custom Docker Compose Setup
+
+For more control, create a `docker-compose.yml` file:
+
+```yaml
+version: '3'
+services:
+  aztec-node:
+    image: aztecprotocol/aztec:0.85.0-alpha-testnet.5
+    container_name: aztec-node
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ${DATA_DIR:-./data}:/data
+    environment:
+      - ETHEREUM_HOSTS=${L1_RPC_URL}
+      - L1_CONSENSUS_HOST_URLS=${L1_CONSENSUS_URL}
+      - DATA_DIRECTORY=/data
+      - VALIDATOR_PRIVATE_KEY=${VALIDATOR_PRIVATE_KEY}
+      - P2P_IP=${P2P_IP:-0.0.0.0}
+      - P2P_TCP_PORT=${P2P_TCP_PORT:-40400}
+      - P2P_UDP_PORT=${P2P_UDP_PORT:-40400}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    command: >
+      sh -c "node --no-warnings /usr/src/yarn-project/aztec/dest/bin/index.js start --network alpha-testnet --node --archiver --sequencer"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+```
+
+Run with:
+
+```bash
+docker-compose up -d
+```
+
+### System Service Setup
+
+Create a systemd service for better management:
+
+```bash
+sudo tee /etc/systemd/system/aztec-node.service > /dev/null << EOF
+[Unit]
+Description=Aztec Sequencer Node
+After=docker.service
+Requires=docker.service
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker stop aztec-node
+ExecStartPre=-/usr/bin/docker rm aztec-node
+ExecStart=/home/$USER/aztec-node/run_aztec_sequencer.sh
+Type=forking
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable aztec-node
+sudo systemctl start aztec-node
+```
+
+Check service status:
+
+```bash
+sudo systemctl status aztec-node
+```
+
+## Frequently Asked Questions
+
+### General Questions
+
+**Q: How much can I earn by running a sequencer node?**  
+A: During the alpha-testnet phase, there are no economic rewards. When the mainnet launches, sequencer rewards will be based on the number of transactions processed and network parameters.
+
+**Q: How much bandwidth does a sequencer node use?**  
+A: Expect 500GB-1TB of data transfer per month, depending on network activity.
+
+**Q: Can I run a sequencer node on a cloud provider?**  
+A: Yes, any cloud provider offering VPS services with the minimum hardware requirements will work. Popular choices include AWS, Google Cloud, Azure, Digital Ocean, and Linode.
+
+### Technical Questions
+
+**Q: How do I know if my node is syncing correctly?**  
+A: Check the logs for messages indicating block processing and peer connections:
+```bash
+docker logs aztec-node | grep "Processed block"
+```
+
+**Q: Can I run multiple nodes on the same machine?**  
+A: While technically possible by changing the port configurations, it's not recommended as it can lead to resource contention.
+
+**Q: How do I backup my node data?**  
+A: Create a snapshot of your data directory:
+```bash
+tar -czvf aztec-node-backup-$(date +%Y%m%d).tar.gz $HOME/aztec-node/data
+```
+
+**Q: What happens if my node goes offline?**  
+A: If your sequencer node goes offline, it will stop receiving and processing transactions. When it comes back online, it will need to sync with the network to catch up on missed transactions.
+
+---
+
+This guide is maintained by the community and is updated regularly as Aztec Network evolves. For the latest information, please refer to the official Aztec documentation or join the Aztec Discord community.
+
+*Last updated: May 2, 2025*
